@@ -10,16 +10,13 @@ from datetime import datetime
 from configparser import ConfigParser
 import os
 
-def build_progress(index, total):
-    progress_bar_len = 50
+config = {}
+debug = 0
+debug = 0
+jellyfin_headers = {}
+notion_headers = {}
 
-    progress_bar = '|' + '-' * int(index / total * progress_bar_len) + ' ' * (progress_bar_len - int(index / total * progress_bar_len)) + '|'
-    progress_percent = '0' * (len(str(total)) - len(str(index))) + str(index) + '/' + str(total)
-
-    progress = progress_bar + ' ' + progress_percent
-    return progress
-
-def load_config():
+def fetch_config():
     progress = build_progress(0, 1)
     print(progress, 'Fetching config file...')
 
@@ -69,23 +66,7 @@ def load_config():
     progress = build_progress(1, 1)
     print(progress)
 
-    return json.dumps({section: dict(config[section]) for section in config.sections()}, ensure_ascii=False, indent=4)
-
-config = load_config()
-print(config)
-
-debug = int(config['global']['debug'])
-offline = int(config['global']['offline'])
-
-jellyfin_headers = {
-    'X-Emby-Token': config['jellyfin']['api_key'],
-    'Content-Type': 'application/json'
-}
-notion_headers = {
-    'Authorization': 'Bearer ' + config['notion']['api_key'],
-    'Notion-Version': '2022-06-28',
-    'Content-Type': 'application/json'
-}
+    return config
 
 def fetch_notion_database(database_id):
     index = 0
@@ -238,6 +219,7 @@ def sync(notion_database, jellyfin_library):
     total = len(notion_database)
     updated_s = 0
     updated_f = 0
+    updated_f_list = []
     skipped_s = 0
     skipped_n = 0
     skipped_n_list = []
@@ -280,6 +262,7 @@ def sync(notion_database, jellyfin_library):
                     updated_s += 1
                 else:
                     updated_f += 1
+                    updated_f_list.append(name)
             else:
                 print(progress, f'Skipped item (s): {name}')
                 skipped_s += 1
@@ -287,11 +270,15 @@ def sync(notion_database, jellyfin_library):
             print(progress, f'Skipped item (n): {name}')
             skipped_n += 1
             skipped_n_list.append(name)
+
     print(f'Updated items: {updated_s}')
     print(f'Failed items: {updated_f}')
+    if updated_f:
+        print(f'Failed items list: {updated_f_list}')
     print(f'Skipped items (s): {skipped_s}')
     print(f'Skipped items (n): {skipped_n}')
-    print(f'Skipped items (n) list: {skipped_n_list}')
+    if skipped_n:
+        print(f'Skipped items (n) list: {skipped_n_list}')
 
 def build_notion_properties(genres, tags, adult, episode_count, current_episode):
     properties = {
@@ -341,6 +328,15 @@ def is_properties_different(notion_properties, properties):
                 return True
     return False
 
+def build_progress(index, total):
+    progress_bar_len = 50
+
+    progress_bar = '|' + '-' * int(index / total * progress_bar_len) + ' ' * (progress_bar_len - int(index / total * progress_bar_len)) + '|'
+    progress_percent = '0' * (len(str(total)) - len(str(index))) + str(index) + '/' + str(total)
+
+    progress = progress_bar + ' ' + progress_percent
+    return progress
+
 def update_notion_item(page_id, properties, progress, name):
     url = 'https://api.notion.com/v1/pages/' + page_id
     data = {
@@ -357,6 +353,26 @@ def update_notion_item(page_id, properties, progress, name):
         return False
 
 def main():
+    print('Jellytion\nThe MIT License (MIT)\nCopyright (c) 2025 Jonathan Chiu')
+
+    global config, debug, offline, jellyfin_headers, notion_headers
+
+    config = fetch_config()
+    print(json.dumps({section: dict(config[section]) for section in config.sections()}, ensure_ascii=False))
+
+    debug = int(config['global']['debug'])
+    offline = int(config['global']['offline'])
+
+    jellyfin_headers = {
+        'X-Emby-Token': config['jellyfin']['api_key'],
+        'Content-Type': 'application/json'
+    }
+    notion_headers = {
+        'Authorization': 'Bearer ' + config['notion']['api_key'],
+        'Notion-Version': '2022-06-28',
+        'Content-Type': 'application/json'
+    }
+
     if debug == 0:
         notion_database = fetch_notion_database(config['notion']['database_id'])
         jellyfin_library = fetch_jellyfin_library()
@@ -367,6 +383,7 @@ def main():
         fetch_notion_database(config['notion']['database_id'])
     if debug == 2 or debug == 3:
         fetch_jellyfin_library()
+
     print('Run complete!')
 
 if __name__ == '__main__':
