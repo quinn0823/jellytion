@@ -1,0 +1,2 @@
+# jellytion
+Jellyfin ↔︎ Notion
