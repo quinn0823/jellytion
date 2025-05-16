@@ -1,4 +1,4 @@
-# jellytion
+# Jellytion
 
 Jellyfin → Notion
 
