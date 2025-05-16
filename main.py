@@ -13,15 +13,15 @@ import os
 def build_progress(index, total):
     progress_bar_len = 50
 
-    progress_bar = "|" + "-" * int(index / total * progress_bar_len) + " " * (progress_bar_len - int(index / total * progress_bar_len)) + "|"
-    progress_percent = "0" * (len(str(total)) - len(str(index))) + str(index) + "/" + str(total)
+    progress_bar = '|' + '-' * int(index / total * progress_bar_len) + ' ' * (progress_bar_len - int(index / total * progress_bar_len)) + '|'
+    progress_percent = '0' * (len(str(total)) - len(str(index))) + str(index) + '/' + str(total)
 
-    progress = progress_bar + " " + progress_percent
+    progress = progress_bar + ' ' + progress_percent
     return progress
 
 def load_config():
     progress = build_progress(0, 1)
-    print(progress, "Fetching config file...")
+    print(progress, 'Fetching config file...')
 
     config = ConfigParser()
 
@@ -30,14 +30,14 @@ def load_config():
         config.read('config.ini')
         print(progress)
     elif os.path.exists('config_default.ini'):
-        print(progress, "Failed to fetch config.ini, using config_default.ini.")
+        print(progress, 'Failed to fetch config.ini, using config_default.ini.')
         config.read('config_default.ini')
     else:
-        print(progress, "Failed to fetch config file.")
+        print(progress, 'Failed to fetch config file.')
         sys.exit(1)
 
     progress = build_progress(0, 1)
-    print(progress, "Validating config file...")
+    print(progress, 'Validating config file...')
 
     config_optional_map = {
         'global': {
@@ -59,39 +59,32 @@ def load_config():
 
     for section, keys in config_mandatory_map.items():
         if not config.has_section(section):
-            print(progress, f"Failed to find section: {section}")
+            print(progress, f'Failed to find section: {section}')
             sys.exit(1)
         for key in keys:
             if not config.has_option(section, key) or not config.get(section, key).strip():
-                print(progress, f"Failed to find option: {section}.{key}")
+                print(progress, f'Failed to find option: {section}.{key}')
                 sys.exit(1)
 
     progress = build_progress(1, 1)
     print(progress)
 
-    return config
+    return json.dumps({section: dict(config[section]) for section in config.sections()}, ensure_ascii=False, indent=4)
 
 config = load_config()
-print(json.dumps({section: dict(config[section]) for section in config.sections()}, ensure_ascii=False, indent=4))
+print(config)
 
 debug = int(config['global']['debug'])
 offline = int(config['global']['offline'])
 
-jellyfin_url = config['jellyfin']['url']
-jellyfin_api_key = config['jellyfin']['api_key']
 jellyfin_headers = {
-    "X-Emby-Token": jellyfin_api_key,
-    "Content-Type": "application/json"
+    'X-Emby-Token': config['jellyfin']['api_key'],
+    'Content-Type': 'application/json'
 }
-jellyfin_adult_id = config['jellyfin']['adult_id']
-
-notion_api_key = config['notion']['api_key']
-notion_database_id = config['notion']['database_id']
-notion_url = "https://api.notion.com/v1/pages"
 notion_headers = {
-    "Authorization": "Bearer " + notion_api_key,
-    "Notion-Version": "2022-06-28",
-    "Content-Type": "application/json"
+    'Authorization': 'Bearer ' + config['notion']['api_key'],
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json'
 }
 
 def fetch_notion_database(database_id):
@@ -101,12 +94,12 @@ def fetch_notion_database(database_id):
     database = []
 
     if debug == 0 and (offline == 1 or offline == 3):
-        print(progress, "Fetching local Notion database...")
+        print(progress, 'Fetching local Notion database...')
         try:
-            with open("notion_database.json", "r") as file:
+            with open('notion_database.json', 'r') as file:
                 database = json.load(file)
         except FileNotFoundError:
-            print(progress, "Failed to fetch local Notion database.")
+            print(progress, 'Failed to fetch local Notion database.')
             sys.exit(1)
 
         progress = build_progress(1, 1)
@@ -114,8 +107,8 @@ def fetch_notion_database(database_id):
 
         return database
 
-    print(progress, "Fetching Notion database...")
-    url = "https://api.notion.com/v1/databases/" + database_id + "/query"
+    print(progress, 'Fetching Notion database...')
+    url = 'https://api.notion.com/v1/databases/' + database_id + '/query'
     has_more = True
     start_cursor = None
 
@@ -124,20 +117,20 @@ def fetch_notion_database(database_id):
         progress = build_progress(index, index + 1)
         payload = {}
         if start_cursor:
-            payload["start_cursor"] = start_cursor
+            payload['start_cursor'] = start_cursor
 
         response = requests.post(url, headers=notion_headers, json=payload)
         if response.status_code == 200:
             data = response.json()
-            database.extend(data["results"])
-            has_more = data.get("has_more", False)
-            start_cursor = data.get("next_cursor", None)
+            database.extend(data['results'])
+            has_more = data.get('has_more', False)
+            start_cursor = data.get('next_cursor', None)
             print(progress)
         else:
-            print(progress, "Failed to fetch Notion database.", response.json())
+            print(progress, f'Failed to fetch Notion database. {response.json()}')
             sys.exit(1)
 
-    with open("notion_database.json", "w") as file:
+    with open('notion_database.json', 'w') as file:
         json.dump(database, file, indent=4)
 
     index = index + 1
@@ -152,13 +145,13 @@ def fetch_jellyfin_library():
     library_dict = {}
 
     if debug == 0 and (offline == 2 or offline == 3):
-        print(progress, "Fetching local Jellyfin library...")
+        print(progress, 'Fetching local Jellyfin library...')
 
         try:
-            with open("jellyfin_library_dict.json", "r") as file:
+            with open('jellyfin_library_dict.json', 'r') as file:
                 library_dict = json.load(file)
         except FileNotFoundError:
-            print(progress, "Failed to fetch local Jellyfin library.")
+            print(progress, 'Failed to fetch local Jellyfin library.')
             sys.exit(1)
 
         progress = build_progress(1, 1)
@@ -166,15 +159,15 @@ def fetch_jellyfin_library():
 
         return library_dict
 
-    print(progress, "Fetching Jellyfin library...")
-    url = jellyfin_url + "/Items"
+    print(progress, 'Fetching Jellyfin library...')
+    url = config['jellyfin']['url'] + '/Items'
     params = {
-        "recursive": "true",
-        # "includeItemTypes": "Season",
-        "includeItemTypes": "Movie, Series, Season, Episode",
-        "fields": "Genres, ParentId, ProviderIds, Tags",
-        # "fields": "AirTime, CanDelete, CanDownload, ChannelInfo, Chapters, Trickplay, ChildCount, CumulativeRunTimeTicks, CustomRating, DateCreated, DateLastMediaAdded, DisplayPreferencesId, Etag, ExternalUrls, Genres, HomePageUrl, ItemCounts, MediaSourceCount, MediaSources, OriginalTitle, Overview, ParentId, Path, People, PlayAccess, ProductionLocations, ProviderIds, PrimaryImageAspectRatio, RecursiveItemCount, Settings, ScreenshotImageTags, SeriesPrimaryImage, SeriesStudio, SortName, SpecialEpisodeNumbers, Studios, Taglines, Tags, RemoteTrailers, MediaStreams, SeasonUserData, ServiceName, ThemeSongIds, ThemeVideoIds, ExternalEtag, PresentationUniqueKey, InheritedParentalRatingValue, ExternalSeriesId, SeriesPresentationUniqueKey, DateLastRefreshed, DateLastSaved, RefreshState, ChannelImage, EnableMediaSourceDisplay, Width, Height, ExtraIds, LocalTrailerCount, IsHD, SpecialFeatureCount",
-        "sortBy": "Name"
+        'recursive': 'true',
+        # 'includeItemTypes': 'Season',
+        'includeItemTypes': 'Movie, Series, Season, Episode',
+        'fields': 'Genres, ParentId, ProviderIds, Tags',
+        # 'fields': 'AirTime, CanDelete, CanDownload, ChannelInfo, Chapters, Trickplay, ChildCount, CumulativeRunTimeTicks, CustomRating, DateCreated, DateLastMediaAdded, DisplayPreferencesId, Etag, ExternalUrls, Genres, HomePageUrl, ItemCounts, MediaSourceCount, MediaSources, OriginalTitle, Overview, ParentId, Path, People, PlayAccess, ProductionLocations, ProviderIds, PrimaryImageAspectRatio, RecursiveItemCount, Settings, ScreenshotImageTags, SeriesPrimaryImage, SeriesStudio, SortName, SpecialEpisodeNumbers, Studios, Taglines, Tags, RemoteTrailers, MediaStreams, SeasonUserData, ServiceName, ThemeSongIds, ThemeVideoIds, ExternalEtag, PresentationUniqueKey, InheritedParentalRatingValue, ExternalSeriesId, SeriesPresentationUniqueKey, DateLastRefreshed, DateLastSaved, RefreshState, ChannelImage, EnableMediaSourceDisplay, Width, Height, ExtraIds, LocalTrailerCount, IsHD, SpecialFeatureCount',
+        'sortBy': 'Name'
     }
     response = requests.get(url, headers=jellyfin_headers, params=params)
     if response.status_code == 200:
@@ -182,58 +175,58 @@ def fetch_jellyfin_library():
         print(progress)
         library = response.json()
     else:
-        print(progress, "Failed to fetch Jellyfin library.", response.json())
+        print(progress, f'Failed to fetch Jellyfin library. {response.json()}')
         sys.exit(1)
 
     progress = build_progress(0, 1)
-    print(progress, "Creating Jellyfin library dictionary...")
+    print(progress, 'Creating Jellyfin library dictionary...')
 
     library_dict = {}
     library_id_dict = {}
     library_id_dict = {}
-    for item in library["Items"]:
-        if item["Type"] == "Movie" or item["Type"] == "Series":
-            tmdb_id = item["ProviderIds"]["Tmdb"]
+    for item in library['Items']:
+        if item['Type'] == 'Movie' or item['Type'] == 'Series':
+            tmdb_id = item['ProviderIds']['Tmdb']
             library_dict[tmdb_id] = {
-                "Name": item["Name"],
-                "Type": item["Type"],
-                "ParentId": item["ParentId"],
-                "Genres": item["Genres"],
-                "Tags": item["Tags"]
+                'Name': item['Name'],
+                'Type': item['Type'],
+                'ParentId': item['ParentId'],
+                'Genres': item['Genres'],
+                'Tags': item['Tags']
             }
-            if item["Type"] == "Series":
-                jellyfin_id = item["Id"]
+            if item['Type'] == 'Series':
+                jellyfin_id = item['Id']
                 library_id_dict[jellyfin_id] = {
-                    "Name": item["Name"],
-                    "Tmdb": tmdb_id
+                    'Name': item['Name'],
+                    'Tmdb': tmdb_id
                 }
-    for item in library["Items"]:
-        if item["Type"] == "Season":
-            jellyfin_series_id = item["SeriesId"]
-            tmdb_id = library_id_dict[jellyfin_series_id]["Tmdb"]
-            library_dict[tmdb_id]["Seasons"] = library_dict[tmdb_id].get("Seasons", {})
-            library_dict[tmdb_id]["Seasons"][item["Name"]] = {}
-            library_id_dict[item["Id"]] = {
-                "Name": item["Name"],
-                "Tmdb": tmdb_id
+    for item in library['Items']:
+        if item['Type'] == 'Season':
+            jellyfin_series_id = item['SeriesId']
+            tmdb_id = library_id_dict[jellyfin_series_id]['Tmdb']
+            library_dict[tmdb_id]['Seasons'] = library_dict[tmdb_id].get('Seasons', {})
+            library_dict[tmdb_id]['Seasons'][item['Name']] = {}
+            library_id_dict[item['Id']] = {
+                'Name': item['Name'],
+                'Tmdb': tmdb_id
             }
-    for item in library["Items"]:
-        if item["Type"] == "Episode":
-            jellyfin_season_id = item["SeasonId"]
-            tmdb_id = library_id_dict[jellyfin_season_id]["Tmdb"]
-            season_name = library_id_dict[jellyfin_season_id]["Name"]
-            library_dict[tmdb_id]["Seasons"][season_name]["Episodes"] = library_dict[tmdb_id]["Seasons"][season_name].get("Episodes", [])
-            library_dict[tmdb_id]["Seasons"][season_name]["Episodes"].append(item["Name"])
+    for item in library['Items']:
+        if item['Type'] == 'Episode':
+            jellyfin_season_id = item['SeasonId']
+            tmdb_id = library_id_dict[jellyfin_season_id]['Tmdb']
+            season_name = library_id_dict[jellyfin_season_id]['Name']
+            library_dict[tmdb_id]['Seasons'][season_name]['Episodes'] = library_dict[tmdb_id]['Seasons'][season_name].get('Episodes', [])
+            library_dict[tmdb_id]['Seasons'][season_name]['Episodes'].append(item['Name'])
     for tmdb_id, item in library_dict.items():
-        if item["Type"] == "Series":
-            for season_name, season_item in item["Seasons"].items():
-                season_item["EpisodeCount"] = len(season_item["Episodes"])
+        if item['Type'] == 'Series':
+            for season_name, season_item in item['Seasons'].items():
+                season_item['EpisodeCount'] = len(season_item['Episodes'])
 
-    with open("jellyfin_library.json", "w") as file:
+    with open('jellyfin_library.json', 'w') as file:
         json.dump(library, file, indent=4)
-    with open("jellyfin_library_dict.json", "w") as file:
+    with open('jellyfin_library_dict.json', 'w') as file:
         json.dump(library_dict, file, indent=4)
-    with open("jellyfin_id_dict.json", "w") as file:
+    with open('jellyfin_id_dict.json', 'w') as file:
         json.dump(library_id_dict, file, indent=4)
 
     progress = build_progress(1, 1)
@@ -251,28 +244,28 @@ def sync(notion_database, jellyfin_library):
     for index, notion_item in enumerate(notion_database):
         progress = build_progress(index + 1, total)
 
-        name_parts = [part["plain_text"] for part in notion_item["properties"]["名称"]["title"]]
-        name = "".join(name_parts)
-        tmdb_id = str(notion_item["properties"]["TMDB ID"]["number"])
+        name_parts = [part['plain_text'] for part in notion_item['properties']['名称']['title']]
+        name = ''.join(name_parts)
+        tmdb_id = str(notion_item['properties']['TMDB ID']['number'])
 
         jellyfin_item = jellyfin_library.get(tmdb_id)
         if jellyfin_item:
-            if jellyfin_item["ParentId"] == jellyfin_adult_id:
+            if jellyfin_item['ParentId'] == config['jellyfin']['adult_id']:
                 adult = True
             else:
                 adult = False
 
-            genres = jellyfin_item["Genres"]
+            genres = jellyfin_item['Genres']
             tags = []
-            for tag in jellyfin_item["Tags"]:
+            for tag in jellyfin_item['Tags']:
                 tag = re.sub(r'^\s+|,|\s+$', '', tag)
                 if tag not in tags:
                     tags.append(tag)
 
-            if jellyfin_item["Type"] == "Series":
-                season_name = notion_item["properties"]["名称"]["title"][2]["text"]["content"]
-                episode_count = jellyfin_item["Seasons"][season_name]["EpisodeCount"]
-                current_episode = notion_item["properties"]["当前"]["number"]
+            if jellyfin_item['Type'] == 'Series':
+                season_name = notion_item['properties']['名称']['title'][2]['text']['content']
+                episode_count = jellyfin_item['Seasons'][season_name]['EpisodeCount']
+                current_episode = notion_item['properties']['当前']['number']
                 if current_episode == None:
                     current_episode = 0
             else:
@@ -281,52 +274,52 @@ def sync(notion_database, jellyfin_library):
 
             properties = build_notion_properties(genres, tags, adult, episode_count, current_episode)
 
-            if is_properties_different(notion_item["properties"], properties):
-                is_updated = update_notion_item(notion_item["id"], properties, progress, name)
+            if is_properties_different(notion_item['properties'], properties):
+                is_updated = update_notion_item(notion_item['id'], properties, progress, name)
                 if is_updated:
                     updated_s += 1
                 else:
                     updated_f += 1
             else:
-                print(progress, "Skipped item (s):", name)
+                print(progress, f'Skipped item (s): {name}')
                 skipped_s += 1
         else:
-            print(progress, "Skipped item (n):", name)
+            print(progress, f'Skipped item (n): {name}')
             skipped_n += 1
             skipped_n_list.append(name)
-    print("Updated items:", updated_s)
-    print("Failed items:", updated_f)
-    print("Skipped items (s):", skipped_s)
-    print("Skipped items (n):", skipped_n)
-    print("Skipped items (n) list:", skipped_n_list)
+    print(f'Updated items: {updated_s}')
+    print(f'Failed items: {updated_f}')
+    print(f'Skipped items (s): {skipped_s}')
+    print(f'Skipped items (n): {skipped_n}')
+    print(f'Skipped items (n) list: {skipped_n_list}')
 
 def build_notion_properties(genres, tags, adult, episode_count, current_episode):
     properties = {
-        "成人": {
-            "checkbox": adult
+        '成人': {
+            'checkbox': adult
         },
-        "类型": {
-            "multi_select": [
+        '类型': {
+            'multi_select': [
                 {
-                    "name": genre
+                    'name': genre
                 } for genre in genres
             ]
         },
-        "标签": {
-            "multi_select": [
+        '标签': {
+            'multi_select': [
                 {
-                    "name": tag
+                    'name': tag
                 } for tag in tags
             ]
         }
     }
     if episode_count != None:
-        properties["集数"] = {
-            "number": episode_count
+        properties['集数'] = {
+            'number': episode_count
         }
     if current_episode != None:
-        properties["当前"] = {
-            "number": current_episode
+        properties['当前'] = {
+            'number': current_episode
         }
     return properties
 
@@ -335,46 +328,46 @@ def is_properties_different(notion_properties, properties):
         if key not in notion_properties:
             return True
         notion_value = notion_properties[key]
-        if key == "成人":
-            if notion_value["checkbox"] != value["checkbox"]:
+        if key == '成人':
+            if notion_value['checkbox'] != value['checkbox']:
                 return True
-        elif key == "类型" or key == "标签":
-            notion_names = [item["name"] for item in notion_value["multi_select"]]
-            names = [item["name"] for item in value["multi_select"]]
+        elif key == '类型' or key == '标签':
+            notion_names = [item['name'] for item in notion_value['multi_select']]
+            names = [item['name'] for item in value['multi_select']]
             if notion_names != names:
                 return True
-        elif key == "集数" or key == "当前":
-            if notion_value["number"] != value["number"]:
+        elif key == '集数' or key == '当前':
+            if notion_value['number'] != value['number']:
                 return True
     return False
 
 def update_notion_item(page_id, properties, progress, name):
-    url = "https://api.notion.com/v1/pages/" + page_id
+    url = 'https://api.notion.com/v1/pages/' + page_id
     data = {
-        "properties": {
+        'properties': {
             **properties
         }
     }
     response = requests.patch(url, headers=notion_headers, data=json.dumps(data))
     if response.status_code == 200:
-        print(progress, "Updated item:", name)
+        print(progress, f'Updated item: {name}')
         return True
     else:
-        print(progress, "Failed to update item:", name, response.json())
+        print(progress, f'Failed to update item: {name} {response.json()}')
         return False
 
 def main():
     if debug == 0:
-        notion_database = fetch_notion_database(notion_database_id)
+        notion_database = fetch_notion_database(config['notion']['database_id'])
         jellyfin_library = fetch_jellyfin_library()
         sync(notion_database, jellyfin_library)
-        with open("last_complete_run_time.txt", "w") as file:
-            file.write(datetime.now().strftime("%Y-%m-%d at %H:%M:%S"))
+        with open('last_complete_run_time.txt', 'w') as file:
+            file.write(datetime.now().strftime('%Y-%m-%d at %H:%M:%S'))
     if debug == 1 or debug == 3:
-        fetch_notion_database(notion_database_id)
+        fetch_notion_database(config['notion']['database_id'])
     if debug == 2 or debug == 3:
         fetch_jellyfin_library()
-    print("Run complete!")
+    print('Run complete!')
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     main()
