@@ -252,11 +252,14 @@ cython_debug/
 
 
 # Jellytion
-# Config
+# User Config
 config.ini
+
+# Local library and database
+jellyfin_id_dict.json
+jellyfin_library.json
+jellyfin_library_dict.json
+notion_database.json
 
 # Last complete run time
 last_complete_run_time.txt
-
-# Local library and database
-*.json
