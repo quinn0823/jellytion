@@ -43,7 +43,7 @@ def fetch_config():
         }
     }
     config_mandatory_map = {
-        'jellyfin': ['url', 'api_key', 'adult_id'],
+        'jellyfin': ['url', 'api_key', 'adult_path'],
         'notion': ['api_key', 'database_id']
     }
 
@@ -146,7 +146,7 @@ def fetch_jellyfin_library():
         'recursive': 'true',
         # 'includeItemTypes': 'Season',
         'includeItemTypes': 'Movie, Series, Season, Episode',
-        'fields': 'Genres, ParentId, ProviderIds, Tags',
+        'fields': 'Genres, ParentId, Path, ProviderIds, Tags',
         # 'fields': 'AirTime, CanDelete, CanDownload, ChannelInfo, Chapters, Trickplay, ChildCount, CumulativeRunTimeTicks, CustomRating, DateCreated, DateLastMediaAdded, DisplayPreferencesId, Etag, ExternalUrls, Genres, HomePageUrl, ItemCounts, MediaSourceCount, MediaSources, OriginalTitle, Overview, ParentId, Path, People, PlayAccess, ProductionLocations, ProviderIds, PrimaryImageAspectRatio, RecursiveItemCount, Settings, ScreenshotImageTags, SeriesPrimaryImage, SeriesStudio, SortName, SpecialEpisodeNumbers, Studios, Taglines, Tags, RemoteTrailers, MediaStreams, SeasonUserData, ServiceName, ThemeSongIds, ThemeVideoIds, ExternalEtag, PresentationUniqueKey, InheritedParentalRatingValue, ExternalSeriesId, SeriesPresentationUniqueKey, DateLastRefreshed, DateLastSaved, RefreshState, ChannelImage, EnableMediaSourceDisplay, Width, Height, ExtraIds, LocalTrailerCount, IsHD, SpecialFeatureCount',
         'sortBy': 'Name'
     }
@@ -171,7 +171,8 @@ def fetch_jellyfin_library():
             library_dict[tmdb_id] = {
                 'Name': item['Name'],
                 'Type': item['Type'],
-                'ParentId': item['ParentId'],
+                # 'ParentId': item['ParentId'],
+                'Path': item['Path'],
                 'Genres': item['Genres'],
                 'Tags': item['Tags']
             }
@@ -232,7 +233,8 @@ def sync(notion_database, jellyfin_library):
 
         jellyfin_item = jellyfin_library.get(tmdb_id)
         if jellyfin_item:
-            if jellyfin_item['ParentId'] == config['jellyfin']['adult_id']:
+            # print(config['jellyfin']['adult_path'], jellyfin_item['Path'])
+            if config['jellyfin']['adult_path'] in jellyfin_item['Path']:
                 adult = True
             else:
                 adult = False
