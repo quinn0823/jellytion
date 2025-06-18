@@ -24,11 +24,11 @@ def fetch_config():
 
     progress = build_progress(1, 1)
     if os.path.exists('config.ini'):
-        config.read('config.ini')
+        config.read('config.ini', encoding='utf-8')
         print(progress)
     elif os.path.exists('config_default.ini'):
         print(progress, 'Failed to fetch config.ini, using config_default.ini.')
-        config.read('config_default.ini')
+        config.read('config_default.ini', encoding='utf-8')
     else:
         print(progress, 'Failed to fetch config file.')
         sys.exit(1)
