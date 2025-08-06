@@ -234,10 +234,10 @@ def sync(notion_database, jellyfin_library):
 
         jellyfin_item = jellyfin_library.get(tmdb_id)
         if jellyfin_item:
-            # if config['jellyfin']['adult_path'] in jellyfin_item['Path']:
-            #     adult = True
-            # else:
-            #     adult = False
+            if config['jellyfin']['adult_dir_name'] in jellyfin_item['Path']:
+                adult = True
+            else:
+                adult = False
 
             if config['jellyfin']['movie_dir_name'] in jellyfin_item['Path']:
                 kind = config['jellyfin']['movie_dir_name']
@@ -265,7 +265,7 @@ def sync(notion_database, jellyfin_library):
                 episode_count = None
                 current_episode = None
 
-            properties = build_notion_properties(kind, genres, tags, None, episode_count, current_episode)
+            properties = build_notion_properties(kind, genres, tags, adult, episode_count, current_episode)
 
             if is_properties_different(notion_item['properties'], properties):
                 is_updated = update_notion_item(notion_item['id'], properties, progress, name)
@@ -298,9 +298,9 @@ def build_notion_properties(kind, genres, tags, adult, episode_count, current_ep
                 'name': kind
             }
         },
-        # '成人': {
-            # 'checkbox': adult
-        # },
+        '成人': {
+            'checkbox': adult
+        },
         '类型': {
             'multi_select': [
                 {
@@ -334,9 +334,9 @@ def is_properties_different(notion_properties, properties):
         if key == '种类':
             if notion_value['select']['name'] != value['select']['name']:
                 return True
-        # elif key == '成人':
-            # if notion_value['checkbox'] != value['checkbox']:
-            #     return True
+        elif key == '成人':
+            if notion_value['checkbox'] != value['checkbox']:
+                return True
         elif key == '类型' or key == '标签':
             notion_names = [item['name'] for item in notion_value['multi_select']]
             names = [item['name'] for item in value['multi_select']]
