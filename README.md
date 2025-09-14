@@ -13,28 +13,6 @@ It is currently highly personal. I'm trying to make the code more configurable, 
 - Python 3.6+
 - Python package: `requests`
 
-## Configuration
-
-``` ini
-[global]
-; Optional
-; 1 = Fetch and save Notion database only; 2 = Fetch and save Jellyfin library only; 3 = Fetch and save both only
-debug = 0
-; 1 = Use local Notion database; 2 = Use local Jellyfin library; 3 = Use both local files
-offline = 0
-
-[jellyfin]
-; Mandatory
-url = JELLYFIN_DOMAIN
-api_key = JELLYFIN_API_KEY
-adult_path = PATH_TO_JELLYFIN_ADULT_LIBRARY
-
-[notion]
-; Mandatory
-api_key = NOTION_API_KEY
-database_id = NOTION_DATABASE_ID
-```
-
 ## Usage
 
 > [!WARNING]
@@ -50,7 +28,7 @@ database_id = NOTION_DATABASE_ID
 
 ---
 
-Updated Date: May 17, 2025
+Updated Date: September 15, 2025
 
 The MIT License (MIT)
 
