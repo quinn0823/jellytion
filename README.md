@@ -10,7 +10,7 @@ It is currently highly personal. I'm trying to make the code more configurable, 
 
 ## Requirements
 
-- Python 3.6+
+- [Python 3.6+](https://www.python.org/downloads/)
 - Python package: `requests`
 
 ## Usage
@@ -18,13 +18,20 @@ It is currently highly personal. I'm trying to make the code more configurable, 
 > [!WARNING]
 > For privacy reasons, please do not make modifications directly on `config_default.ini`. Please create a copy of it, and rename it `config.ini`.
 
-1. Clone this repository.
-2. Complete the config file: `config.ini` (or `config_default.ini`, not recommended)
-3. Run the script
-    - Universal
-        1. Run `pip install -r requirements.txt`
-        2. Run `python main.py`
-    - Windows: Double-click `script/run.cmd` to run the all-in-one script.
+1. Clone the repository or download the source.
+    ```
+    git clone https://github.com/quinn0823/jellytion.git
+    ```
+1. Complete the config file `config.ini` (or `config_default.ini`, not recommended).
+1. Install the dependencies.
+    ```
+    pip install -r requirements.txt
+    ```
+1. Change directory to the source folder and run the script.
+    ```
+    cd jellytion
+    python main.py
+    ```
 
 ---
 
